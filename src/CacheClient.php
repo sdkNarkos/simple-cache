@@ -66,7 +66,10 @@ class CacheClient {
     }
 
     private function isSocketAlive(): bool {
-        return is_resource($this->socket) && !feof($this->socket);
+        if (!is_resource($this->socket)) return false;
+        $meta = stream_get_meta_data($this->socket);
+        if ($meta['timed_out'] || feof($this->socket)) return false;
+        return true;
     }
 
     private function reconnect(): void {
@@ -97,53 +100,45 @@ class CacheClient {
         }
     }
 
+    private function readBytes(int $length): string {
+        $data = '';
+        $start = microtime(true);
+        while (strlen($data) < $length) {
+            $chunk = fread($this->socket, $length - strlen($data));
+            if ($chunk === false || $chunk === '') {
+                if (microtime(true) - $start >= $this->maxReadingDelay) {
+                    throw new \Exception("Timeout reading from socket.");
+                }
+                usleep(1000);
+                continue;
+            }
+            $data .= $chunk;
+        }
+        return $data;
+    }
+
     private function getResponse() {
-		$response = '';
-		$startTime = microtime(true);
+        // Read 4 octets to get message length
+        $lengthData = $this->readBytes(4);
+        $unpacked = unpack('Nlength', $lengthData);
+        $targetLength = $unpacked['length'];
 
-		// Read 4 octets to get message length
-		$lengthData = '';
-		while (strlen($lengthData) < 4) {
-			$chunk = fread($this->socket, 4 - strlen($lengthData));
-			if ($chunk === false || $chunk === '') {
-				if (microtime(true) - $startTime >= $this->maxReadingDelay) {
-					throw new \Exception("Timeout while reading message length");
-				}
-				usleep(1000);
-				continue;
-			}
-			$lengthData .= $chunk;
-		}
-		$unpacked = unpack('Nlength', $lengthData);
-		$targetLength = $unpacked['length'];
+        // Read the entire JSON
+        $responseData = $this->readBytes($targetLength);
 
-		// Read the entire JSON
-		$responseData = '';
-		while (strlen($responseData) < $targetLength) {
-			$chunk = fread($this->socket, $targetLength - strlen($responseData));
-			if ($chunk === false || $chunk === '') {
-				if (microtime(true) - $startTime >= $this->maxReadingDelay) {
-					throw new \Exception("Timeout while reading message data");
-				}
-				usleep(1000);
-				continue;
-			}
-			$responseData .= $chunk;
-		}
+        $response = json_decode($responseData);
 
-		$response = json_decode($responseData);
+        if ($response === null) {
+            throw new \Exception("Failed to decode JSON response");
+        }
 
-		if ($response === null) {
-			throw new \Exception("Failed to decode JSON response");
-		}
-
-		if (isset($response->error)) {
-			throw new \Exception($response->error);
-		} elseif (isset($response->results)) {
-			return $response->results;
-		} else {
-			return $response;
-		}
+        if (isset($response->error)) {
+            throw new \Exception($response->error);
+        } elseif (isset($response->results)) {
+            return $response->results;
+        } else {
+            return $response;
+        }
     }
 
     ///////////////
