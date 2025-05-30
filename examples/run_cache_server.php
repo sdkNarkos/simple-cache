@@ -16,11 +16,6 @@ try {
         'authKeys' => array(
             'exampleKeyZRDfgirt87ftztrdVgZ73j'
         ),
-        'protocol' => 'tcp',
-        'host' => 'localhost',
-        'port' => 9999,
-        'pingCheckInterval' => 5,
-        'usleep' => 1000,
         'verbose' => true
     );
     // Instantiates and runs the cache server

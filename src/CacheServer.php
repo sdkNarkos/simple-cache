@@ -4,13 +4,12 @@ declare(strict_types=1);
 namespace sdkNarkos\SimpleCache;
 
 class CacheServer {
-    public readonly array $authKeys;
-    public readonly string $protocol;
-    public readonly string $host;
-    public readonly int $port;
-    public readonly int $pingCheckInterval;
-    public readonly int $usleep;
-    public readonly bool $verbose;
+    private readonly array $authKeys;
+    private readonly string $protocol;
+    private readonly string $host;
+    private readonly int $port;
+    private readonly int $usleep;
+    private readonly bool $verbose;
 
     private $socket;
     private array $clients = array();
@@ -37,7 +36,6 @@ class CacheServer {
         $this->protocol = $config['protocol'] ?? 'tcp';
         $this->host = $config['host'] ?? 'localhost';
         $this->port = $config['port'] ?? 9999;
-        $this->pingCheckInterval = $config['pingCheckInterval'] ?? 2;
         $this->usleep = $config['usleep'] ?? 1000;
         $this->verbose = $config['verbose'] ?? false;
 
@@ -46,16 +44,6 @@ class CacheServer {
                 $this->shutdown();
                 exit;
             });
-        }
-    }
-
-    public function shutdown() {
-        if($this->socket) {
-            fclose($this->socket);
-            $this->logLine('Cache server closed');
-        }
-        foreach ($this->clients as $client) {
-            fclose($client);
         }
     }
 
@@ -75,6 +63,16 @@ class CacheServer {
 
             $this->logLine('Cache server started');
             $this->loop();
+        }
+    }
+
+    private function shutdown() {
+        if($this->socket) {
+            fclose($this->socket);
+            $this->logLine('Cache server closed');
+        }
+        foreach ($this->clients as $client) {
+            fclose($client);
         }
     }
 
