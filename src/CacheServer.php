@@ -40,15 +40,22 @@ class CacheServer {
         $this->pingCheckInterval = $config['pingCheckInterval'] ?? 2;
         $this->usleep = $config['usleep'] ?? 1000;
         $this->verbose = $config['verbose'] ?? false;
+
+        if(extension_loaded('pcntl')) {
+            pcntl_signal(SIGINT, function() {
+                $this->shutdown();
+                exit;
+            });
+        }
     }
 
-    // I can't find a way to detect script interrupted with ctrl+C or killed.
-    // Have to find a way to properly shutdown things when an interruption happen
-    public function __destruct() {
+    public function shutdown() {
         if($this->socket) {
-            // stream_socket_shutdown($this->socket);
             fclose($this->socket);
             $this->logLine('Cache server closed');
+        }
+        foreach ($this->clients as $client) {
+            fclose($client);
         }
     }
 
