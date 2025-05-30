@@ -10,11 +10,9 @@ class CacheClient {
     public readonly int $port;
     public readonly float $maxReadingDelay;
     private readonly int $connectTimeout;
-    private readonly int $maxReconnectAttempts;
 
     private $socket;
     private bool $isConnected = false;
-    private int $reconnectAttempts = 0;
 
     public function __construct($config) {
         if(!isset($config['authKey'])) {
@@ -27,83 +25,73 @@ class CacheClient {
         $this->port = $config['port'] ?? 9999;
         $this->maxReadingDelay = $config['maxReadingDelay'] ?? 3;
         $this->connectTimeout = $config['connectTimeout'] ?? 30;
-        $this->maxReconnectAttempts = $config['maxReconnectAttempts'] ?? 3;
     }
 
     public function __destruct() {
-        $this->disconnect();
+        if ($this->socket) {
+            fclose($this->socket);
+            $this->socket = null;
+            $this->isConnected = false;
+        }
     }
 
-    private function connect(): void {
+    private function connect() {
         $url = $this->protocol . "://" . $this->host . ":" . $this->port;
         $errno = null;
         $errstr = '';
 
         $this->socket = stream_socket_client($url, $errno, $errstr, $this->connectTimeout);
         if (!$this->socket) {
-            throw new \Exception("Connection failed: $errstr ($errno)");
+            throw new \Exception($errstr . "(" . $errno . ")");
+        } else {
+            if(!stream_set_blocking($this->socket, false)) {
+                throw new \Exception("Not able to set the stream non-blocking");
+            }
+            $this->isConnected = true;
         }
-
-        if (!@stream_set_blocking($this->socket, false)) {
-            throw new \Exception("Unable to set the stream to non-blocking mode");
-        }
-
-        $this->isConnected = true;
     }
 
     private function disconnect(): void {
         if ($this->socket) {
-            @fclose($this->socket);
+            fclose($this->socket);
             $this->socket = null;
         }
         $this->isConnected = false;
     }
 
-    private function checkConnection(): void {
+    private function checkConnection() {
         if (!$this->isConnected || !$this->isSocketAlive()) {
             $this->reconnect();
-        } else {
-            $this->reconnectAttempts = 0; // Reset if all good
         }
     }
 
     private function isSocketAlive(): bool {
         if (!is_resource($this->socket)) return false;
         $meta = stream_get_meta_data($this->socket);
-        return !$meta['timed_out'] && !feof($this->socket);
+        if ($meta['timed_out'] || feof($this->socket)) return false;
+        return true;
     }
 
     private function reconnect(): void {
         $this->disconnect();
-
-        while ($this->reconnectAttempts < $this->maxReconnectAttempts) {
-            try {
-                $this->connect();
-                $this->reconnectAttempts = 0;
-                return;
-            } catch (\Exception $e) {
-                $this->reconnectAttempts++;
-                sleep(1 * $this->reconnectAttempts); // Delay increases linearly
-            }
-        }
-
-        throw new \Exception("Failed to reconnect after {$this->maxReconnectAttempts} attempts");
+        $this->connect();
     }
 
-    private function createCallObject(string $command): \stdClass {
-        return (object)[
-            'authKey' => $this->authKey,
-            'command' => $command
-        ];
+    private function createCallObject(string $command) {
+        $data = new \stdClass();
+        $data->authKey = $this->authKey;
+        $data->command = $command;
+        return $data;
     }
 
-    private function doCall(\stdClass $data): void {
+    private function doCall(\stdClass $data) {
         $jsonData = json_encode($data);
         $length = strlen($jsonData);
         $binLength = pack('N', $length);
 
         $written = @fwrite($this->socket, $binLength . $jsonData);
         if ($written === false) {
+            // Try to reconnect once
             $this->reconnect();
             $written = @fwrite($this->socket, $binLength . $jsonData);
             if ($written === false) {
@@ -118,7 +106,7 @@ class CacheClient {
         while (strlen($data) < $length) {
             $chunk = fread($this->socket, $length - strlen($data));
             if ($chunk === false || $chunk === '') {
-                if ((microtime(true) - $start) >= $this->maxReadingDelay) {
+                if (microtime(true) - $start >= $this->maxReadingDelay) {
                     throw new \Exception("Timeout reading from socket.");
                 }
                 usleep(1000);
@@ -146,9 +134,11 @@ class CacheClient {
 
         if (isset($response->error)) {
             throw new \Exception($response->error);
+        } elseif (isset($response->results)) {
+            return $response->results;
+        } else {
+            return $response;
         }
-
-        return $response->results ?? $response;
     }
 
     ///////////////
