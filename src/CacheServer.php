@@ -34,42 +34,12 @@ class CacheServer {
         }
         $this->authKeys = $config['authKeys'];
 
-        if(!isset($config['protocol'])) {
-            $this->protocol = 'tcp';
-        } else {
-            $this->protocol = $config['protocol'];
-        }
-
-        if(!isset($config['host'])) {
-            $this->host = 'localhost';
-        } else {
-            $this->host = $config['host'];
-        }
-
-        if(!isset($config['port'])) {
-            $this->port = 9999;
-        } else {
-            $this->port = $config['port'];
-        }
-        
-        if(!isset($config['pingCheckInterval'])) {
-            $this->pingCheckInterval = 2;
-        } else {
-            $this->pingCheckInterval = $config['pingCheckInterval'];
-        }
-
-        if(!isset($config['usleep'])) {
-            $this->usleep = 1000;
-        } else {
-            $this->usleep = $config['usleep'];
-        }
-
-        if(!isset($config['verbose'])) {
-            $this->verbose = false;
-        } else {
-            $this->verbose = $config['verbose'];
-        }
-        
+        $this->protocol = $config['protocol'] ?? 'tcp';
+        $this->host = $config['host'] ?? 'localhost';
+        $this->port = $config['port'] ?? 9999;
+        $this->pingCheckInterval = $config['pingCheckInterval'] ?? 2;
+        $this->usleep = $config['usleep'] ?? 1000;
+        $this->verbose = $config['verbose'] ?? false;
     }
 
     // I can't find a way to detect script interrupted with ctrl+C or killed.

@@ -19,29 +19,10 @@ class CacheClient {
         }
         $this->authKey = $config['authKey'];
 
-        if(!isset($config['protocol'])) {
-            $this->protocol = 'tcp';
-        } else {
-            $this->protocol = $config['protocol'];
-        }
-
-        if(!isset($config['host'])) {
-            $this->host = 'localhost';
-        } else {
-            $this->host = $config['host'];
-        }
-
-        if(!isset($config['port'])) {
-            $this->port = 9999;
-        } else {
-            $this->port = $config['port'];
-        }
-        
-        if(!isset($config['maxReadingDelay'])) {
-            $this->maxReadingDelay = 3;
-        } else {
-            $this->maxReadingDelay = $config['maxReadingDelay'];
-        }
+        $this->protocol = $config['protocol'] ?? 'tcp';
+        $this->host = $config['host'] ?? 'localhost';
+        $this->port = $config['port'] ?? 9999;
+        $this->maxReadingDelay = $config['maxReadingDelay'] ?? 3;
     }
 
     private function connect() {
