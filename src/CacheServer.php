@@ -12,18 +12,19 @@ class CacheServer {
     private readonly bool $verbose;
 
     private $socket;
-    private array $clients = [];
-    private array $buffers = [];
+    private array $clients = array();
+    private array $buffers = array();
 
-    private array $contents = [];
-    private array $expiries = [];
+    // value
+    private array $contents = array();
+    private array $expiries = array();
     private float $nextContentExpires = -1;
-
-    private array $listContents = [];
-    private array $listExpiries = [];
+    // list
+    private array $listContents = array();
+    private array $listExpiries = array();
     private float $listNextContentExpires = -1;
 
-    public function __construct($config) {
+    public function __construct(array $config) {
         if (!isset($config['authKeys']) || !is_array($config['authKeys'])) {
             throw new \Exception("You must provide an array of authKeys.");
         }
@@ -36,64 +37,53 @@ class CacheServer {
 
         if (extension_loaded('pcntl')) {
             pcntl_signal(SIGINT, function() {
-                $this->shutdown();
+                if ($this->socket) {
+                    fclose($this->socket);
+                }
+                foreach ($this->clients as $client) {
+                    fclose($client);
+                }
+                $this->logLine("Cache server shut down.");
                 exit;
             });
         }
     }
 
-    public function run() {
-        $url = "{$this->protocol}://{$this->host}:{$this->port}";
+    public function run(): void {
+        $url = $this->protocol . "://" . $this->host . ":" . $this->port;
         $errno = null;
         $errstr = '';
+
         $this->socket = stream_socket_server($url, $errno, $errstr);
 
         if (!$this->socket) {
-            throw new \Exception("Could not create socket: $errstr ($errno)");
+            throw new \Exception("Not able to create the stream socket: " . $errstr . " (" . $errno . ")");
         }
 
-        stream_set_blocking($this->socket, false);
-        $this->logLine("Cache server started");
+        if(!stream_set_blocking($this->socket, false)) {
+            throw new \Exception("Not able to set the stream non-blocking");
+        }
 
+        $this->logLine('Cache server started');
         $this->loop();
     }
 
-    private function loop() {
-        while (true) {
+    private function logLine($line): void {
+        echo '[' . date('Y-m-d H:i:s') . '] ' . $line . PHP_EOL;
+    }
+
+    private function loop(): void {
+        while(true) {
             $this->checkExpiredContents();
             $this->checkExpiredListContents();
             $this->checkConnections();
             $this->readMessages();
+
             usleep($this->usleep);
         }
     }
 
-    private function checkConnections() {
-        while ($conn = @stream_socket_accept($this->socket, 0)) {
-            stream_set_blocking($conn, false);
-            $this->clients[] = $conn;
-            $this->buffers[(int) $conn] = '';
-            if ($this->verbose) {
-                $this->logLine("Client connected: " . stream_socket_get_name($conn, true));
-            }
-        }
-    }
-
-    private function shutdown() {
-        if ($this->socket) {
-            fclose($this->socket);
-        }
-        foreach ($this->clients as $client) {
-            fclose($client);
-        }
-        $this->logLine("Cache server shut down.");
-    }
-
-    private function logLine(string $line) {
-        echo "[" . date('Y-m-d H:i:s') . "] $line\n";
-    }
-
-    private function checkExpiredContents() {
+    private function checkExpiredContents(): void {
         if ($this->nextContentExpires === -1) return;
         $now = microtime(true);
         if ($now < $this->nextContentExpires) return;
@@ -113,7 +103,7 @@ class CacheServer {
         $this->nextContentExpires = $newExpiry;
     }
 
-    private function checkExpiredListContents() {
+    private function checkExpiredListContents(): void {
         if ($this->listNextContentExpires === -1) return;
         $now = microtime(true);
         if ($now < $this->listNextContentExpires) return;
@@ -133,48 +123,18 @@ class CacheServer {
         $this->listNextContentExpires = $newExpiry;
     }
 
-    private function readMessages() {
-        if (empty($this->clients)) return;
-
-        $read = $this->clients;
-        $write = $except = null;
-        if (@stream_select($read, $write, $except, 0) === false) return;
-
-        foreach ($read as $client) {
-            $id = (int)$client;
-
-            $data = fread($client, 8192);
-            if ($data === false || $data === '') {
-                $this->removeClient($client);
-                continue;
-            }
-
-            $this->buffers[$id] .= $data;
-
-            while (mb_strlen($this->buffers[$id], '8bit') >= 4) {
-                $lengthData = substr($this->buffers[$id], 0, 4);
-                $unpacked = unpack('Nlength', $lengthData);
-                $messageLength = $unpacked['length'];
-
-                if (mb_strlen($this->buffers[$id], '8bit') < 4 + $messageLength) {
-                    break;
-                }
-
-                $json = substr($this->buffers[$id], 4, $messageLength);
-                $this->buffers[$id] = substr($this->buffers[$id], 4 + $messageLength);
-
-                $decoded = json_decode($json);
-                if ($decoded === null) {
-                    $this->sendErrorResponse($client, "Invalid JSON");
-                    continue;
-                }
-
-                $this->processMessage($client, $decoded);
+    private function checkConnections(): void {
+        while ($conn = @stream_socket_accept($this->socket, 0)) {
+            stream_set_blocking($conn, false);
+            $this->clients[] = $conn;
+            $this->buffers[(int) $conn] = '';
+            if ($this->verbose) {
+                $this->logLine("Client connected: " . stream_socket_get_name($conn, true));
             }
         }
     }
 
-    private function removeClient($client) {
+    private function removeClient($client): void {
         $key = array_search($client, $this->clients, true);
         if ($key !== false) {
             fclose($client);
@@ -185,25 +145,58 @@ class CacheServer {
         }
     }
 
-    private function sendResponse($socket, $response) {
-        $json = json_encode($response);
-        $len = mb_strlen($json, '8bit');
-        $header = pack('N', $len);
-        $result = @fwrite($socket, $header . $json);
-        if ($result === false) {
-            $this->removeClient($socket);
+    private function readMessages(): void {
+        $clients = $this->clients;
+        if(0 == count($clients)) return;
+
+        $write = $except = NULL;
+        if (false === ($num_changed_streams = stream_select($clients, $write, $except, 0))) {
+            throw new \Exception("Error while trying stream_select");
+        }
+
+        foreach($clients as $client) {
+            $clientId = (int)$client;
+
+            if(feof($client)) {
+                // Client disconnected
+                $this->removeClient($client);
+                return;
+            }
+
+            $rawMessage = '';
+            while (($line = fgets($client, 8192)) !== false) {
+                $rawMessage .= $line;
+            }
+
+            if (strlen($rawMessage) == 0) return;
+
+            $this->buffers[$clientId] .= $rawMessage;
+
+            while (strlen($this->buffers[$clientId]) >= 4) {
+                $lengthData = substr($this->buffers[$clientId], 0, 4);
+                $unpacked = unpack('Nlength', $lengthData);
+                $messageLength = $unpacked['length'];
+
+                if (strlen($this->buffers[$clientId]) < 4 + $messageLength) {
+                    break;
+                }
+
+                $json = substr($this->buffers[$clientId], 4, $messageLength);
+                $this->buffers[$clientId] = substr($this->buffers[$clientId], 4 + $messageLength);
+
+                $decoded = json_decode($json);
+                if ($decoded === null) {
+                    $json_error = json_last_error_msg();
+                    $this->sendErrorResponse($client, "Invalid JSON: {$json_error}");
+                    continue;
+                }
+
+                $this->processMessage($client, $decoded);
+            }
         }
     }
 
-    private function sendErrorResponse($socket, string $error) {
-        $this->sendResponse($socket, (object)['error' => $error]);
-    }
-
-    private function sendResultsResponse($socket, $results) {
-        $this->sendResponse($socket, (object)['results' => $results]);
-    }
-
-    private function processMessage($socket, $msg) {
+    private function processMessage($socket, $msg): void {
         if (!isset($msg->authKey) || !in_array($msg->authKey, $this->authKeys)) {
             $this->sendErrorResponse($socket, "Authentication failed");
             return;
@@ -218,26 +211,21 @@ class CacheServer {
             case 'exists':
                 $this->sendResultsResponse($socket, isset($this->contents[$msg->key]));
                 break;
-
             case 'get':
                 $this->sendResultsResponse($socket, $this->contents[$msg->key] ?? '');
                 break;
-
             case 'getAllKeys':
                 $this->sendResultsResponse($socket, array_keys($this->contents));
                 break;
-
             case 'getRem':
                 $val = $this->contents[$msg->key] ?? '';
                 unset($this->contents[$msg->key], $this->expiries[$msg->key]);
                 $this->sendResultsResponse($socket, $val);
                 break;
-
             case 'remove':
                 unset($this->contents[$msg->key], $this->expiries[$msg->key]);
                 $this->sendResultsResponse($socket, "OK");
                 break;
-
             case 'set':
                 if (!isset($msg->key, $msg->val, $msg->lifetime)) {
                     $this->sendErrorResponse($socket, "Missing parameters for 'set'");
@@ -256,13 +244,42 @@ class CacheServer {
 
                 $this->sendResultsResponse($socket, "OK");
                 break;
-
             case 'listExists':
                 $this->sendResultsResponse($socket, isset($this->listContents[$msg->key]));
                 break;
-
             default:
                 $this->sendErrorResponse($socket, "Unknown command");
         }
     }
+
+    private function sendErrorResponse($socket, $error): void {
+        if($this->verbose) {
+            $clientName = stream_socket_get_name($socket, true);
+            $this->logLine('Client: ' . $clientName . ' encountered an error: ' . $error);
+        }
+
+        $response = new \stdClass();
+        $response->error = $error;
+
+        $this->sendResponse($socket, $response);
+    }
+
+    private function sendResultsResponse($socket, $results): void {
+        $response = new \stdClass();
+        $response->results = $results;
+
+        $this->sendResponse($socket, $response);
+    }
+
+    private function sendResponse($socket, $data): void {
+        $jsonData = json_encode($data);
+		$length = strlen($jsonData);
+		$lengthBin = pack('N', $length); // 4 octets big endian
+
+		if(false === @fwrite($socket, $lengthBin . $jsonData)) {
+			// Failed to write, client may have disconnected...
+			$this->removeClient($socket);
+		}
+    }
+
 }

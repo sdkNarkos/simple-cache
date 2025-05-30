@@ -4,11 +4,11 @@ declare(strict_types=1);
 namespace sdkNarkos\SimpleCache;
 
 class CacheClient {
-    public readonly string $authKey;
-    public readonly string $protocol;
-    public readonly string $host;
-    public readonly int $port;
-    public readonly float $maxReadingDelay;
+    private readonly string $authKey;
+    private readonly string $protocol;
+    private readonly string $host;
+    private readonly int $port;
+    private readonly float $maxReadingDelay;
     private readonly int $connectTimeout;
     private readonly int $maxReconnectAttempts;
 
@@ -25,7 +25,7 @@ class CacheClient {
         $this->protocol = $config['protocol'] ?? 'tcp';
         $this->host = $config['host'] ?? 'localhost';
         $this->port = $config['port'] ?? 9999;
-        $this->maxReadingDelay = $config['maxReadingDelay'] ?? 3;
+        $this->maxReadingDelay = $config['maxReadingDelay'] ?? 5;
         $this->connectTimeout = $config['connectTimeout'] ?? 30;
         $this->maxReconnectAttempts = $config['maxReconnectAttempts'] ?? 3;
     }
@@ -103,7 +103,7 @@ class CacheClient {
 
     private function doCall(\stdClass $data): void {
         $jsonData = json_encode($data);
-        $length = mb_strlen($jsonData, '8bit');
+        $length = strlen($jsonData);
         $binLength = pack('N', $length);
 
         $written = @fwrite($this->socket, $binLength . $jsonData);
@@ -119,8 +119,8 @@ class CacheClient {
     private function readBytes(int $length): string {
         $data = '';
         $start = microtime(true);
-        while (mb_strlen($data, '8bit') < $length) {
-            $chunk = fread($this->socket, $length - mb_strlen($data, '8bit'));
+        while (strlen($data) < $length) {
+            $chunk = fread($this->socket, $length - strlen($data));
             if ($chunk === false || $chunk === '') {
                 if ((microtime(true) - $start) >= $this->maxReadingDelay) {
                     throw new \Exception("Timeout reading from socket.");
