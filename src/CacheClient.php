@@ -34,6 +34,10 @@ class CacheClient {
         $this->disconnect();
     }
 
+    public function isConnected(): bool {
+        return $this->isConnected && $this->isSocketAlive();
+    }
+
     private function connect(): void {
         $url = $this->protocol . "://" . $this->host . ":" . $this->port;
         $errno = null;
@@ -99,7 +103,7 @@ class CacheClient {
 
     private function doCall(\stdClass $data): void {
         $jsonData = json_encode($data);
-        $length = strlen($jsonData);
+        $length = mb_strlen($jsonData, '8bit');
         $binLength = pack('N', $length);
 
         $written = @fwrite($this->socket, $binLength . $jsonData);
@@ -115,8 +119,8 @@ class CacheClient {
     private function readBytes(int $length): string {
         $data = '';
         $start = microtime(true);
-        while (strlen($data) < $length) {
-            $chunk = fread($this->socket, $length - strlen($data));
+        while (mb_strlen($data, '8bit') < $length) {
+            $chunk = fread($this->socket, $length - mb_strlen($data, '8bit'));
             if ($chunk === false || $chunk === '') {
                 if ((microtime(true) - $start) >= $this->maxReadingDelay) {
                     throw new \Exception("Timeout reading from socket.");
