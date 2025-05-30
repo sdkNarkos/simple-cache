@@ -9,6 +9,7 @@ class CacheClient {
     public readonly string $host;
     public readonly int $port;
     public readonly float $maxReadingDelay;
+    private readonly int $connectTimeout;
 
     private $socket;
     private bool $isConnected = false;
@@ -23,6 +24,7 @@ class CacheClient {
         $this->host = $config['host'] ?? 'localhost';
         $this->port = $config['port'] ?? 9999;
         $this->maxReadingDelay = $config['maxReadingDelay'] ?? 3;
+        $this->connectTimeout = $config['connectTimeout'] ?? 30;
     }
 
     public function __destruct() {
@@ -38,7 +40,7 @@ class CacheClient {
         $errno = null;
         $errstr = '';
 
-        $this->socket = stream_socket_client($url, $errno, $errstr, 30);
+        $this->socket = stream_socket_client($url, $errno, $errstr, $this->connectTimeout);
         if (!$this->socket) {
             throw new \Exception($errstr . "(" . $errno . ")");
         } else {
@@ -49,10 +51,27 @@ class CacheClient {
         }
     }
 
-    private function checkConnection() {
-        if(!$this->isConnected) {
-            $this->connect();
+    private function disconnect(): void {
+        if ($this->socket) {
+            fclose($this->socket);
+            $this->socket = null;
         }
+        $this->isConnected = false;
+    }
+
+    private function checkConnection() {
+        if (!$this->isConnected || !$this->isSocketAlive()) {
+            $this->reconnect();
+        }
+    }
+
+    private function isSocketAlive(): bool {
+        return is_resource($this->socket) && !feof($this->socket);
+    }
+
+    private function reconnect(): void {
+        $this->disconnect();
+        $this->connect();
     }
 
     private function createCallObject(string $command) {
@@ -64,18 +83,25 @@ class CacheClient {
 
     private function doCall(\stdClass $data) {
         $jsonData = json_encode($data);
-		$length = strlen($jsonData);
-		$binLength = pack('N', $length);  // 4 octets big-endian
-		if(false === @fwrite($this->socket, $binLength . $jsonData)) {
-			throw new \Exception('Error when writing to the cache server.');
-		}
+        $length = strlen($jsonData);
+        $binLength = pack('N', $length);
+
+        $written = @fwrite($this->socket, $binLength . $jsonData);
+        if ($written === false) {
+            // Try to reconnect once
+            $this->reconnect();
+            $written = @fwrite($this->socket, $binLength . $jsonData);
+            if ($written === false) {
+                throw new \Exception('Error writing to the cache server after reconnect.');
+            }
+        }
     }
 
     private function getResponse() {
 		$response = '';
 		$startTime = microtime(true);
 
-		// Lire d'abord 4 octets de longueur
+		// Read 4 octets to get message length
 		$lengthData = '';
 		while (strlen($lengthData) < 4) {
 			$chunk = fread($this->socket, 4 - strlen($lengthData));
@@ -91,7 +117,7 @@ class CacheClient {
 		$unpacked = unpack('Nlength', $lengthData);
 		$targetLength = $unpacked['length'];
 
-		// Lire le JSON complet
+		// Read the entire JSON
 		$responseData = '';
 		while (strlen($responseData) < $targetLength) {
 			$chunk = fread($this->socket, $targetLength - strlen($responseData));
