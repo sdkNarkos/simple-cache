@@ -25,6 +25,14 @@ class CacheClient {
         $this->maxReadingDelay = $config['maxReadingDelay'] ?? 3;
     }
 
+    public function __destruct() {
+        if ($this->socket) {
+            fclose($this->socket);
+            $this->socket = null;
+            $this->isConnected = false;
+        }
+    }
+
     private function connect() {
         $url = $this->protocol . "://" . $this->host . ":" . $this->port;
         $errno = null;

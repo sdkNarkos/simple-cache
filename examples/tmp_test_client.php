@@ -11,11 +11,7 @@ use sdkNarkos\SimpleCache\CacheClient;
 try {
     // Define cache options
     $cacheConfig = array(
-        'authKey' => 'exampleKeyZRDfgirt87ftztrdVgZ73j',
-        'protocol' => 'tcp',
-        'host' => 'localhost',
-        'port' => 9999,
-        'maxReadingDelay' => 3
+        'authKey' => 'exampleKeyZRDfgirt87ftztrdVgZ73j'
     );
     // Instantiates the cache client
     $cacheClient = new CacheClient($cacheConfig);
