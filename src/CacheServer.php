@@ -267,19 +267,23 @@ class CacheServer {
         }
 
         $currentMessageLength = strlen($this->partialIncomingMessages[$socketName]);
-        if($currentMessageLength > 10) {
-            $targetLength = (int)substr($this->partialIncomingMessages[$socketName], 0, 10);
-            if($currentMessageLength >= 10 + $targetLength) {
-                $messageToProcess = substr($this->partialIncomingMessages[$socketName], 10, $targetLength);
+		if($currentMessageLength > 4) {
+			// Lire les 4 premiers octets (big endian)
+			$lengthBin = substr($this->partialIncomingMessages[$socketName], 0, 4);
+			$unpacked = unpack('Nlength', $lengthBin);
+			$targetLength = $unpacked['length'];
 
-                $this->partialIncomingMessages[$socketName] = substr($this->partialIncomingMessages[$socketName], 10 + $targetLength + strlen(PHP_EOL));
-                if(empty($this->partialIncomingMessages[$socketName])) {
-                    unset($this->partialIncomingMessages[$socketName]);
-                }
+			if($currentMessageLength >= 4 + $targetLength) {
+				$messageToProcess = substr($this->partialIncomingMessages[$socketName], 4, $targetLength);
 
-                $this->processMessage($socket, $messageToProcess);
-            }
-        }
+				$this->partialIncomingMessages[$socketName] = substr($this->partialIncomingMessages[$socketName], 4 + $targetLength);
+				if(empty($this->partialIncomingMessages[$socketName])) {
+					unset($this->partialIncomingMessages[$socketName]);
+				}
+
+				$this->processMessage($socket, $messageToProcess);
+			}
+		}
     }
 
     private function processMessage($socket, $message) {
@@ -368,13 +372,13 @@ class CacheServer {
 
     private function sendResponse($socket, $data) {
         $jsonData = json_encode($data);
-        $tmpLength = (string)strlen($jsonData);
-        $length = str_pad($tmpLength, 10, "0", STR_PAD_LEFT);
+		$length = strlen($jsonData);
+		$lengthBin = pack('N', $length); // 4 octets big endian
 
-        if(false === @fwrite($socket, $length . $jsonData . PHP_EOL)) {
-            // Failed to write, client may have disconnected...
-            $this->removeClient($socket);
-        }
+		if(false === @fwrite($socket, $lengthBin . $jsonData)) {
+			// Failed to write, client may have disconnected...
+			$this->removeClient($socket);
+		}
     }
 
     ///////////////

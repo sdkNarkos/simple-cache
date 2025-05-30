@@ -75,62 +75,60 @@ class CacheClient {
 
     private function doCall(\stdClass $data) {
         $jsonData = json_encode($data);
-        $tmpLength = (string)strlen($jsonData);
-        // 2,147,483,647 max size of a 32 bits integer => 10
-        $length = str_pad($tmpLength, 10, "0", STR_PAD_LEFT);
-        if(false === @fwrite($this->socket, $length . $jsonData . PHP_EOL)) {
-            throw new \Exception('Error when writing to the cache serveur.');
-        }
+		$length = strlen($jsonData);
+		$binLength = pack('N', $length);  // 4 octets big-endian
+		if(false === @fwrite($this->socket, $binLength . $jsonData)) {
+			throw new \Exception('Error when writing to the cache server.');
+		}
     }
 
     private function getResponse() {
-        $response = '';
-        $startTime = microtime(true);
+		$response = '';
+		$startTime = microtime(true);
 
-        // sometime it stop with uncomplete reading, so force it and track received length
-        $keepReading = true;
-        $targetLength = 0;
-        while ($keepReading) {
-            $line = fgets($this->socket, 4096);
-            if(null != $line) {
-                $response .= $line;
-            }
+		// Lire d'abord 4 octets de longueur
+		$lengthData = '';
+		while (strlen($lengthData) < 4) {
+			$chunk = fread($this->socket, 4 - strlen($lengthData));
+			if ($chunk === false || $chunk === '') {
+				if (microtime(true) - $startTime >= $this->maxReadingDelay) {
+					throw new \Exception("Timeout while reading message length");
+				}
+				usleep(1000);
+				continue;
+			}
+			$lengthData .= $chunk;
+		}
+		$unpacked = unpack('Nlength', $lengthData);
+		$targetLength = $unpacked['length'];
 
-            // message length check
-            $responseTmpLength = strlen($response);
-            if(!$targetLength) {
-                if($responseTmpLength > 10) {
-                    $targetLength = (int)substr($response, 0, 10);
-                }
-            }
-            
-            if($targetLength) {
-                if($responseTmpLength >= 10 + $targetLength) {
-                    $keepReading = false;
-                }
-            }
-            
-            if(microtime(true) - $startTime >= $this->maxReadingDelay) {
-                // tmp, remove echo later
-                echo "maxReadingDelay reached" . PHP_EOL;
-                break;
-            }
-        }
-        
-        if (strlen($response) == 0) {
-            throw new \Exception("No response from the server.");
-        } else {
-            $response = json_decode(substr($response, 10));
+		// Lire le JSON complet
+		$responseData = '';
+		while (strlen($responseData) < $targetLength) {
+			$chunk = fread($this->socket, $targetLength - strlen($responseData));
+			if ($chunk === false || $chunk === '') {
+				if (microtime(true) - $startTime >= $this->maxReadingDelay) {
+					throw new \Exception("Timeout while reading message data");
+				}
+				usleep(1000);
+				continue;
+			}
+			$responseData .= $chunk;
+		}
 
-            if (isset($response->error)) {
-                throw new \Exception($response->error);
-            } else if (isset($response->results)) {
-                return $response->results;
-            } else {
-                // Should not fall here if response is formated correctly, error or results should be returned...
-                return $response;
-            }
-        }
+		$response = json_decode($responseData);
+
+		if ($response === null) {
+			throw new \Exception("Failed to decode JSON response");
+		}
+
+		if (isset($response->error)) {
+			throw new \Exception($response->error);
+		} elseif (isset($response->results)) {
+			return $response->results;
+		} else {
+			return $response;
+		}
     }
 
     ///////////////
