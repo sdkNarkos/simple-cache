@@ -327,7 +327,7 @@ class CacheServer {
         if (isset($this->expiries[$key])) {
             $tmpExpiry = $this->expiries[$key];
             unset($this->expiries[$key]);
-            if($tmpExpiry == $this->nextContentExpires) $this->recalculateNextContentExpires();
+            if($tmpExpiry == $this->nextContentExpires) $this->nextContentExpires = $this->calculateNextExpire($this->expiries);;
         }
     }
 
@@ -335,7 +335,7 @@ class CacheServer {
         if (isset($this->listExpiries[$key])) {
             $tmpListExpiry = $this->listExpiries[$key];
             unset($this->listExpiries[$key]);
-            if($tmpListExpiry == $this->listNextContentExpires) $this->recalculateListNextContentExpires();
+            if($tmpListExpiry == $this->listNextContentExpires) $this->listNextContentExpires = $this->calculateNextExpire($this->listExpiries);
         }
     }
 
@@ -348,9 +348,7 @@ class CacheServer {
         } else {
             $oldExpiry = $this->expiries[$key];
             $this->expiries[$key] = $timestamp;
-            if($oldExpiry == $this->nextContentExpires) {
-                $this->recalculateNextContentExpires();
-            }
+            if($oldExpiry == $this->nextContentExpires) $this->nextContentExpires = $this->calculateNextExpire($this->expiries);
         }
     }
 
@@ -368,18 +366,8 @@ class CacheServer {
                 $this->listExpiries[$key] = $timestamp;
             }
             
-            if($oldExpiry == $this->listNextContentExpires) {
-                $this->recalculateListNextContentExpires();
-            }
+            if($oldExpiry == $this->listNextContentExpires) $this->listNextContentExpires = $this->calculateNextExpire($this->listExpiries);
         }
-    }
-
-    private function recalculateNextContentExpires(): void {
-        $this->nextContentExpires = $this->calculateNextExpire($this->expiries);
-    }
-
-    private function recalculateListNextContentExpires(): void {
-        $this->listNextContentExpires = $this->calculateNextExpire($this->listExpiries);
     }
 
     private function calculateNextExpire(array $expiries): float {
