@@ -576,7 +576,7 @@ class CacheServer {
 
         $this->sendResultsResponse($socket, "OK");
     }
-    // TODO
+
     private function commandListSet($socket, $msg): void {
         $this->verifyKey($msg->key);
         $this->verifyVal($msg->val);
@@ -588,7 +588,7 @@ class CacheServer {
         }
 
         $this->listContents[$msg->key] = $msg->val;
-        $this->setListExpiry($msg->key, $msg->lifetime);
+        $this->setListExpiry($msg->key, microtime(true) + $msg->lifetime);
 
         $this->sendResultsResponse($socket, "OK");
     }

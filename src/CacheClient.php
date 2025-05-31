@@ -161,6 +161,27 @@ class CacheClient {
 
     ////////////
     // value //
+    public function exists(string $key) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('exists');
+        $data->key = $key;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function expire(string $key, float $lifetime) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('expire');
+        $data->key = $key;
+        $data->lifetime = $lifetime;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
     public function get(string $key) {
         $this->checkConnection();
 
@@ -190,16 +211,6 @@ class CacheClient {
         return $this->getResponse();
     }
 
-    public function exists(string $key) {
-        $this->checkConnection();
-        
-        $data = $this->createCallObject('exists');
-        $data->key = $key;
-
-        $this->doCall($data);
-        return $this->getResponse();
-    }
-
     public function remove(string $key) {
         $this->checkConnection();
         
@@ -210,7 +221,7 @@ class CacheClient {
         return $this->getResponse();
     }
 
-    public function set(string $key, string $val, int $lifetime = 0) {
+    public function set(string $key, string $val, float $lifetime = 0) {
         $this->checkConnection();
         
         $data = $this->createCallObject('set');
@@ -224,6 +235,149 @@ class CacheClient {
 
     ///////////
     // list //
+    public function listExists(string $key) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listExists');
+        $data->key = $key;
 
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listExpire(string $key, float $lifetime) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listExpire');
+        $data->key = $key;
+        $data->lifetime = $lifetime;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listAddFirst(string $key, mixed $val, float $lifetime = 0) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listAddFirst');
+        $data->key = $key;
+        $data->val = $val;
+        $data->lifetime = $lifetime;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listAddLast(string $key, mixed $val, float $lifetime = 0) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listAddLast');
+        $data->key = $key;
+        $data->val = $val;
+        $data->lifetime = $lifetime;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listGet(string $key) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listGet');
+        $data->key = $key;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listGetFirst(string $key) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listGetFirst');
+        $data->key = $key;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listGetRemFirst(string $key) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listGetRemFirst');
+        $data->key = $key;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listGetLast(string $key) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listGetLast');
+        $data->key = $key;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listGetRemLast(string $key) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listGetRemLast');
+        $data->key = $key;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listGetAllKeys() {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listGetAllKeys');
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listGetRem(string $key) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listGetRem');
+        $data->key = $key;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listRemove(string $key) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listRemove');
+        $data->key = $key;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function listSet(string $key, mixed $val, float $lifetime = 0) {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('listSet');
+        $data->key = $key;
+        $data->val = $val;
+        $data->lifetime = $lifetime;
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
+
+    public function ping() {
+        $this->checkConnection();
+        
+        $data = $this->createCallObject('ping');
+
+        $this->doCall($data);
+        return $this->getResponse();
+    }
     
 }
