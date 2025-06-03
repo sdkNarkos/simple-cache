@@ -109,12 +109,30 @@ $client = new CacheClient([
 
 ## 📡 Supported Commands
 
-- `set($key, $value, $ttl = null)`
+- `set($key, $value, $ttl = 0)`
 - `get($key)`
-- `delete($key)`
-- `has($key)`
-- `flush()`
-- 'TODO add full list'
+- `getAllKeys()`
+- `getRem($key)`
+- `exists($key)`
+- `expire($key, $ttl)`
+- `remove($key)`
+
+- `listSet($key, $value, $ttl = 0)`
+- `listGet($key)`
+- `listGetAllKeys()`
+- `listGetRem($key)`
+- `listExists($key)`
+- `listExpire($key, $ttl)`
+- `listAddFirst($key, $value, $ttl = 0)`
+- `listAddLast($key, $value, $ttl = 0)`
+- `listGetFirst($key)`
+- `listGetLast($key)`
+- `listGetRemFirst($key)`
+- `listGetRemLast($key)`
+- `listRemove($key)`
+
+- `ping()`
+- `stats()`
 
 ---
 
@@ -247,12 +265,30 @@ $client = new CacheClient([
 
 ## 📡 Commandes supportées
 
-- `set($key, $value, $ttl = null)`
+- `set($key, $value, $ttl = 0)`
 - `get($key)`
-- `delete($key)`
-- `has($key)`
-- `flush()`
-- 'TODO ajouter la liste complète...'
+- `getAllKeys()`
+- `getRem($key)`
+- `exists($key)`
+- `expire($key, $ttl)`
+- `remove($key)`
+
+- `listSet($key, $value, $ttl = 0)`
+- `listGet($key)`
+- `listGetAllKeys()`
+- `listGetRem($key)`
+- `listExists($key)`
+- `listExpire($key, $ttl)`
+- `listAddFirst($key, $value, $ttl = 0)`
+- `listAddLast($key, $value, $ttl = 0)`
+- `listGetFirst($key)`
+- `listGetLast($key)`
+- `listGetRemFirst($key)`
+- `listGetRemLast($key)`
+- `listRemove($key)`
+
+- `ping()`
+- `stats()`
 
 ---
 
