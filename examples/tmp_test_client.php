@@ -12,12 +12,12 @@ try {
     // Define cache options
     $cacheConfig = array(
         'authKey' => 'exampleKeyZRDfgirt87ftztrdVgZ73j',
-        'logger' => function (string $level, string $message) {
+        /*'logger' => function (string $level, string $message) {
             file_put_contents(__DIR__ . '/client.log',
                 '[' . date('Y-m-d H:i:s') . '] ' . strtoupper($level) . ': ' . $message . PHP_EOL,
                 FILE_APPEND
             );
-        }
+        }*/
     );
     // Instantiates the cache client
     $cacheClient = new CacheClient($cacheConfig);

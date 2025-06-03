@@ -59,7 +59,7 @@ final class CommandMessage implements JsonSerializable {
 
     public function isAuthenticated(array $authKeys): bool {
         foreach ($authKeys as $storedKey) {
-            if (hash_equals($storedKey, $this->key)) {
+            if (hash_equals($storedKey, $this->authKey)) {
                 return true;
             }
         }

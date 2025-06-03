@@ -17,12 +17,12 @@ try {
             'exampleKeyZRDfgirt87ftztrdVgZ73j'
         ),
         'verbose' => true,
-        'logger' => function (string $level, string $message) {
+        /*'logger' => function (string $level, string $message) {
             file_put_contents(__DIR__ . '/server.log',
                 '[' . date('Y-m-d H:i:s') . '] ' . strtoupper($level) . ': ' . $message . PHP_EOL,
                 FILE_APPEND
             );
-        }
+        }*/
     );
     // Instantiates and runs the cache server
     $KosCacheServer = new CacheServer($cacheConfig);

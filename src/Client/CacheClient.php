@@ -87,7 +87,7 @@ class CacheClient {
     private function checkConnection(): void {
         if (!$this->isConnected || !$this->isSocketAlive()) {
             $this->reconnect();
-        } else {
+        } else if ($this->reconnectAttempts > 0){
             $this->reconnectAttempts = 0; // Reset if all good
         }
     }
@@ -103,20 +103,20 @@ class CacheClient {
 
         while ($this->reconnectAttempts < $this->maxReconnectAttempts) {
             try {
-                $this->log('info', "Attempting to reconnect (attempt {$this->reconnectAttempts})...");
+                $this->log('info', "Attempting to connect (attempt " . $this->reconnectAttempts + 1 . "})...");
                 $this->connect();
-                $this->log('info', "Reconnection successful.");
+                $this->log('info', "Connection successful.");
                 $this->reconnectAttempts = 0;
                 return;
             } catch (\Exception $e) {
                 $this->reconnectAttempts++;
-                $this->log('warning', "Reconnect attempt {$this->reconnectAttempts} failed: " . $e->getMessage());
+                $this->log('warning', "Connection attempt {$this->reconnectAttempts} failed: " . $e->getMessage());
                 sleep(1 * $this->reconnectAttempts); // Linear backoff
             }
         }
 
-        $this->log('error', "Failed to reconnect after {$this->maxReconnectAttempts} attempts");
-        throw new \Exception("Failed to reconnect after {$this->maxReconnectAttempts} attempts");
+        $this->log('error', "Failed to connect after {$this->maxReconnectAttempts} attempts");
+        throw new \Exception("Failed to connect after {$this->maxReconnectAttempts} attempts");
     }
 
     private function doCall(CommandMessage $commandMessage): mixed {
