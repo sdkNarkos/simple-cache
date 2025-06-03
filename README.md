@@ -102,7 +102,7 @@ $client = new CacheClient([
 
 ## 🔒 Security
 
-- Optional authentication using `authKey`
+- Authentication using `authKey`
 - No built-in encryption (intended for local or trusted environments)
 
 ---
@@ -130,6 +130,11 @@ You can test manually using `tmp_test_client.php`.
 Developed by Narkos
 
 > This project is lightweight, easy to integrate, and can serve as a base for a distributed caching system.
+
+## Disclaimer of Liability
+
+This software is provided "as is", without warranty of any kind.
+The author cannot be held liable for any direct or indirect damages resulting from its use.
 
 # FRENCH
 
@@ -264,3 +269,9 @@ Tu peux tester manuellement avec `tmp_test_client.php`.
 Développé par Narkos
 
 > Ce projet est libre, rapide à intégrer, et peut servir de base à un système distribué.
+
+
+## Limitation de responsabilité
+
+Ce logiciel est fourni "tel quel", sans garantie d'aucune sorte.
+L’auteur ne peut être tenu responsable des dommages directs ou indirects résultant de son utilisation.
