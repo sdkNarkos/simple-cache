@@ -8,7 +8,7 @@ set_time_limit(0);
 
 include_once(__DIR__ . '/../vendor/autoload.php');
 
-use sdkNarkos\SimpleCache\CacheServer;
+use sdkNarkos\SimpleCache\Server\CacheServer;
 
 try {
     // Define cache options, only the authKeys array is required, with at least one authKey
@@ -16,7 +16,13 @@ try {
         'authKeys' => array(
             'exampleKeyZRDfgirt87ftztrdVgZ73j'
         ),
-        'verbose' => true
+        'verbose' => true,
+        'logger' => function (string $level, string $message) {
+            file_put_contents(__DIR__ . '/server.log',
+                '[' . date('Y-m-d H:i:s') . '] ' . strtoupper($level) . ': ' . $message . PHP_EOL,
+                FILE_APPEND
+            );
+        }
     );
     // Instantiates and runs the cache server
     $KosCacheServer = new CacheServer($cacheConfig);

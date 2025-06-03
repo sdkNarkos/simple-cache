@@ -6,12 +6,18 @@ ini_set('display_errors', 1);
 
 include_once(__DIR__ . '/../vendor/autoload.php');
 
-use sdkNarkos\SimpleCache\CacheClient;
+use sdkNarkos\SimpleCache\Client\CacheClient;
 
 try {
     // Define cache options
     $cacheConfig = array(
-        'authKey' => 'exampleKeyZRDfgirt87ftztrdVgZ73j'
+        'authKey' => 'exampleKeyZRDfgirt87ftztrdVgZ73j',
+        'logger' => function (string $level, string $message) {
+            file_put_contents(__DIR__ . '/client.log',
+                '[' . date('Y-m-d H:i:s') . '] ' . strtoupper($level) . ': ' . $message . PHP_EOL,
+                FILE_APPEND
+            );
+        }
     );
     // Instantiates the cache client
     $cacheClient = new CacheClient($cacheConfig);
