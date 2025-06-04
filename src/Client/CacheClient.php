@@ -174,22 +174,45 @@ class CacheClient {
         return $responseMessage->getResults();
     }
 
-    ///////////////
-    // Commands //
-    /////////////
+    /////////////////////////
+    // Validate return types
+    private function validateArray(mixed $result): void {
+        if(!is_array($result)) {
+            $this->log("error", "Expected array, got " . gettype($result));
+            throw new \UnexpectedValueException("Expected array, got " . gettype($result));
+        }
+    }
 
-    ////////////
-    // value //
+    private function validateBool(mixed $result): void {
+        if(!is_bool($result)) {
+            $this->log("error", "Expected bool, got " . gettype($result));
+            throw new \UnexpectedValueException("Expected bool, got " . gettype($result));
+        }
+    }
+
+    private function validateString(mixed $result): void {
+        if(!is_string($result)) {
+            $this->log("error", "Expected string, got " . gettype($result));
+            throw new \UnexpectedValueException("Expected string, got " . gettype($result));
+        }
+    }
+
+    ////////////////////////////
+    // Commands on key-value //
     public function exists(string $key): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'exists', $key);
-        return (bool)$this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
-    public function expire(string $key, float $ttl) {
+    public function expire(string $key, float $ttl): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'expire', $key, null, $ttl);
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
     public function get(string $key): mixed {
@@ -198,122 +221,148 @@ class CacheClient {
         return $this->doCall($commandMessage);
     }
 
-    public function getAllKeys() {
+    public function getAllKeys(): array {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'getAllKeys');
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateArray($result);
+        return $result;
     }
 
-    public function getRem(string $key) {
+    public function getRem(string $key): mixed {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'getRem', $key);
         return $this->doCall($commandMessage);
     }
 
-    public function remove(string $key) {
+    public function remove(string $key): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'remove', $key);
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
-    public function set(string $key, string $val, float $ttl = 0) {
+    public function set(string $key, string $val, float $ttl = 0): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'set', $key, $val, $ttl);
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
-    ///////////
-    // list //
+    ///////////////////////////
+    // Commands on key-list //
     public function listExists(string $key): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listExists', $key);
-        return (bool)$this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
-    public function listExpire(string $key, float $ttl) {
+    public function listExpire(string $key, float $ttl): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listExpire', $key, null, $ttl);
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
-    public function listAddFirst(string $key, mixed $val, float $ttl = 0) {
+    public function listAddFirst(string $key, mixed $val, float $ttl = 0): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listAddFirst', $key, $val, $ttl);
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
-    public function listAddLast(string $key, mixed $val, float $ttl = 0) {
+    public function listAddLast(string $key, mixed $val, float $ttl = 0): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listAddLast', $key, $val, $ttl);
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
-    public function listGet(string $key) {
+    public function listGet(string $key): array {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listGet', $key);
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateArray($result);
+        return $result;
     }
 
-    public function listGetFirst(string $key) {
+    public function listGetFirst(string $key): mixed {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listGetFirst', $key);
         return $this->doCall($commandMessage);
     }
 
-    public function listGetRemFirst(string $key) {
+    public function listGetRemFirst(string $key): mixed {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listGetRemFirst', $key);
         return $this->doCall($commandMessage);
     }
 
-    public function listGetLast(string $key) {
+    public function listGetLast(string $key): mixed {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listGetLast', $key);
         return $this->doCall($commandMessage);
     }
 
-    public function listGetRemLast(string $key) {
+    public function listGetRemLast(string $key): mixed {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listGetRemLast', $key);
         return $this->doCall($commandMessage);
     }
 
-    public function listGetAllKeys() {
+    public function listGetAllKeys(): array {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listGetAllKeys');
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateArray($result);
+        return $result;
     }
 
-    public function listGetRem(string $key) {
+    public function listGetRem(string $key): mixed {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listGetRem', $key);
         return $this->doCall($commandMessage);
     }
 
-    public function listRemove(string $key) {
+    public function listRemove(string $key): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listRemove', $key);
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
-    public function listSet(string $key, mixed $val, float $ttl = 0) {
+    public function listSet(string $key, mixed $val, float $ttl = 0): bool {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listSet', $key, $val, $ttl);
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateBool($result);
+        return $result;
     }
 
-    ////////////
-    // Others //
+    /////////////////////
+    // Other commands //
     public function ping(): string {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'ping');
-        return (string)$this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateString($result);
+        return $result;
     }
 
-    public function stats() {
+    public function stats(): array {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'stats');
-        return $this->doCall($commandMessage);
+        $result = $this->doCall($commandMessage);
+        $this->validateArray($result);
+        return $result;
     }
     
 }

@@ -67,6 +67,7 @@ final class CommandMessage implements JsonSerializable {
         return false;
     }
 
+    // Validations
     public function verifyKey(): void {
         if (!isset($this->key) || strlen($this->key) < 1) {
             throw new \InvalidArgumentException("Missing parameter key");
@@ -79,13 +80,13 @@ final class CommandMessage implements JsonSerializable {
         }
     }
 
-    public function verifyVal() {
+    public function verifyVal(): void {
         if (!isset($this->val)) {
             throw new \InvalidArgumentException("Missing parameter val");
         }
     }
 
-    // === Getters ===
+    // Getters
     public function getAuthKey(): string {
         return $this->authKey;
     }

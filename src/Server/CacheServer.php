@@ -184,7 +184,7 @@ class CacheServer {
     private function sendResponse($client, ResponseMessage $responseMessage): void {
         $jsonData = $responseMessage->toJson();
 		$length = strlen($jsonData);
-		$lengthBin = pack('N', $length); // 4 octets big endian
+		$lengthBin = pack('N', $length);
 
 		if(false === @fwrite($client, $lengthBin . $jsonData)) {
 			// Failed to write, client may have disconnected...

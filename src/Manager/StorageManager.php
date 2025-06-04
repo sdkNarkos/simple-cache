@@ -36,7 +36,6 @@ class StorageManager {
         foreach ($this->expiries as $key => $exp) {
             if ($exp <= $now) {
                 unset($this->contents[$key], $this->expiries[$key]);
-                //if ($this->verbose) $this->logLine("Expired key: $key");
             } else {
                 $newExpiry = ($newExpiry === -1 || $exp < $newExpiry) ? $exp : $newExpiry;
             }
@@ -54,7 +53,6 @@ class StorageManager {
         foreach ($this->listExpiries as $key => $exp) {
             if ($exp <= $now) {
                 unset($this->listContents[$key], $this->listExpiries[$key]);
-                //if ($this->verbose) $this->logLine("Expired list key: $key");
             } else {
                 $newExpiry = ($newExpiry === -1 || $exp < $newExpiry) ? $exp : $newExpiry;
             }

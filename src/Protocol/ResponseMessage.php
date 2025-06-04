@@ -58,7 +58,7 @@ final class ResponseMessage implements JsonSerializable {
         return json_encode($this);
     }
 
-    // === Getters ===
+    // Getters
     public function getError(): ?string {
         return $this->error;
     }

@@ -8,16 +8,16 @@ class CacheClientQuick {
         return new CacheClient($config);
     }
 
-    // --- Valeurs simples ---
+    // key-value
     public static function get(array $config, string $key): mixed {
         return self::createClient($config)->get($key);
     }
 
-    public static function set(array $config, string $key, string $value, int $lifetime = 0): mixed {
+    public static function set(array $config, string $key, string $value, int $lifetime = 0): bool {
         return self::createClient($config)->set($key, $value, $lifetime);
     }
 
-    public static function remove(array $config, string $key): mixed {
+    public static function remove(array $config, string $key): bool {
         return self::createClient($config)->remove($key);
     }
 
@@ -29,7 +29,7 @@ class CacheClientQuick {
         return self::createClient($config)->getRem($key);
     }
 
-    public static function expire(array $config, string $key, int $ttl): mixed {
+    public static function expire(array $config, string $key, int $ttl): bool {
         return self::createClient($config)->expire($key, $ttl);
     }
 
@@ -37,20 +37,20 @@ class CacheClientQuick {
         return self::createClient($config)->getAllKeys();
     }
 
-    // --- Listes ---
+    // key-list
     public static function listExists(array $config, string $key): bool {
         return self::createClient($config)->listExists($key);
     }
 
-    public static function listRemove(array $config, string $key): mixed {
+    public static function listRemove(array $config, string $key): bool {
         return self::createClient($config)->listRemove($key);
     }
 
-    public static function listAddFirst(array $config, string $key, string $value): mixed {
+    public static function listAddFirst(array $config, string $key, string $value): bool {
         return self::createClient($config)->listAddFirst($key, $value);
     }
 
-    public static function listAddLast(array $config, string $key, string $value): mixed {
+    public static function listAddLast(array $config, string $key, string $value): bool {
         return self::createClient($config)->listAddLast($key, $value);
     }
 
@@ -70,11 +70,11 @@ class CacheClientQuick {
         return self::createClient($config)->listGetRemLast($key);
     }
 
-    public static function listExpire(array $config, string $key, int $ttl): mixed {
+    public static function listExpire(array $config, string $key, int $ttl): bool {
         return self::createClient($config)->listExpire($key, $ttl);
     }
 
-    public static function listSet(array $config, string $key, array $values): mixed {
+    public static function listSet(array $config, string $key, array $values): bool {
         return self::createClient($config)->listSet($key, $values);
     }
 
@@ -82,7 +82,7 @@ class CacheClientQuick {
         return self::createClient($config)->listGet($key);
     }
 
-    // Divers
+    // others
     public static function ping(array $config): string {
         return self::createClient($config)->ping();
     }
