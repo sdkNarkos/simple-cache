@@ -193,7 +193,7 @@ class StorageManager {
 
         $this->setExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
 
-        return ResponseMessage::createResults("Expiration updated");
+        return ResponseMessage::createResults(true);
     }
 
     private function commandGet(commandMessage $commandMessage): ResponseMessage {
@@ -215,7 +215,7 @@ class StorageManager {
         unset($this->contents[$commandMessage->getKey()]);
 
         $this->removeExpiry($commandMessage->getKey());
-        return ResponseMessage::createResults("ACK");
+        return ResponseMessage::createResults(true);
     }
 
     private function commandSet(commandMessage $commandMessage): ResponseMessage {
@@ -226,7 +226,7 @@ class StorageManager {
         $this->contents[$commandMessage->getKey()] = $commandMessage->getVal();
         $this->setExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
 
-        return ResponseMessage::createResults("ACK");
+        return ResponseMessage::createResults(true);
     }
 
     private function commandListExists(commandMessage $commandMessage): ResponseMessage {
@@ -244,7 +244,7 @@ class StorageManager {
 
         $this->setListExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
 
-        return ResponseMessage::createResults("Expiration updated");
+        return ResponseMessage::createResults(true);
     }
 
     private function commandListAddFirst(commandMessage $commandMessage): ResponseMessage {
@@ -253,7 +253,7 @@ class StorageManager {
         $commandMessage->verifyTtl();
 
         if (!isset($this->listContents[$commandMessage->getKey()])) {
-            $this->listContents[$commandMessage->getKey()] = [];
+            $this->listContents[$commandMessage->getKey()] = array();
         } elseif (!is_array($this->listContents[$commandMessage->getKey()])) {
             return ResponseMessage::createError("Target key is not a list");
         }
@@ -271,7 +271,7 @@ class StorageManager {
         $commandMessage->verifyTtl();
 
         if (!isset($this->listContents[$commandMessage->getKey()])) {
-            $this->listContents[$commandMessage->getKey()] = [];
+            $this->listContents[$commandMessage->getKey()] = array();
         } elseif (!is_array($this->listContents[$commandMessage->getKey()])) {
             return ResponseMessage::createError("Target key is not a list");
         }
@@ -285,7 +285,7 @@ class StorageManager {
 
     private function commandListGet(commandMessage $commandMessage): ResponseMessage {
         $commandMessage->verifyKey();
-        return ResponseMessage::createResults($this->listContents[$commandMessage->getKey()] ?? '');
+        return ResponseMessage::createResults($this->listContents[$commandMessage->getKey()] ?? array());
     }
 
     private function commandListGetFirst(commandMessage $commandMessage): ResponseMessage {
@@ -355,7 +355,7 @@ class StorageManager {
         unset($this->listContents[$commandMessage->getKey()]);
         $this->removeListExpiry($commandMessage->getKey());
 
-        return ResponseMessage::createResults("ACK");
+        return ResponseMessage::createResults(true);
     }
 
     private function commandListSet(commandMessage $commandMessage): ResponseMessage {
@@ -370,6 +370,6 @@ class StorageManager {
         $this->listContents[$commandMessage->getKey()] = $commandMessage->getVal();
         $this->setListExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
 
-        return ResponseMessage::createResults("ACK");
+        return ResponseMessage::createResults(true);
     }
 }

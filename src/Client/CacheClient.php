@@ -197,6 +197,13 @@ class CacheClient {
         }
     }
 
+    private function validateInt(mixed $result): void {
+        if(!is_int($result)) {
+            $this->log("error", "Expected integer, got " . gettype($result));
+            throw new \UnexpectedValueException("Expected integer, got " . gettype($result));
+        }
+    }
+
     ////////////////////////////
     // Commands on key-value //
     public function exists(string $key): bool {
@@ -269,19 +276,19 @@ class CacheClient {
         return $result;
     }
 
-    public function listAddFirst(string $key, mixed $val, float $ttl = 0): bool {
+    public function listAddFirst(string $key, mixed $val, float $ttl = 0): int {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listAddFirst', $key, $val, $ttl);
         $result = $this->doCall($commandMessage);
-        $this->validateBool($result);
+        $this->validateInt($result);
         return $result;
     }
 
-    public function listAddLast(string $key, mixed $val, float $ttl = 0): bool {
+    public function listAddLast(string $key, mixed $val, float $ttl = 0): int {
         $this->checkConnection();
         $commandMessage = new CommandMessage($this->authKey, 'listAddLast', $key, $val, $ttl);
         $result = $this->doCall($commandMessage);
-        $this->validateBool($result);
+        $this->validateInt($result);
         return $result;
     }
 
