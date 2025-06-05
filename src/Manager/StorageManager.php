@@ -224,7 +224,12 @@ class StorageManager {
         $commandMessage->verifyTtl();
 
         $this->contents[$commandMessage->getKey()] = $commandMessage->getVal();
-        $this->setExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
+
+        if(0 < $commandMessage->getTtl()) {
+            $this->setExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
+        } else {
+            $this->removeExpiry($commandMessage->getKey());
+        }
 
         return ResponseMessage::createResults(true);
     }
@@ -260,7 +265,11 @@ class StorageManager {
 
         $values = is_array($commandMessage->getVal()) ? $commandMessage->getVal() : [$commandMessage->getVal()];
         $this->listContents[$commandMessage->getKey()] = array_merge($values, $this->listContents[$commandMessage->getKey()]);
-        $this->setListExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
+        if(0 < $commandMessage->getTtl()) {
+            $this->setListExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
+        } else {
+            $this->removeListExpiry($commandMessage->getKey());
+        }
 
         return ResponseMessage::createResults(count($this->listContents[$commandMessage->getKey()]));
     }
@@ -278,7 +287,11 @@ class StorageManager {
 
         $values = is_array($commandMessage->getVal()) ? $commandMessage->getVal() : [$commandMessage->getVal()];
         array_push(...[&$this->listContents[$commandMessage->getKey()]], ...$values);
-        $this->setListExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
+        if(0 < $commandMessage->getTtl()) {
+            $this->setListExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
+        } else {
+            $this->removeListExpiry($commandMessage->getKey());
+        }
 
         return ResponseMessage::createResults(count($this->listContents[$commandMessage->getKey()]));
     }
@@ -368,7 +381,11 @@ class StorageManager {
         }
 
         $this->listContents[$commandMessage->getKey()] = $commandMessage->getVal();
-        $this->setListExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
+        if(0 < $commandMessage->getTtl()) {
+            $this->setListExpiry($commandMessage->getKey(), microtime(true) + $commandMessage->getTtl());
+        } else {
+            $this->removeListExpiry($commandMessage->getKey());
+        }
 
         return ResponseMessage::createResults(true);
     }
